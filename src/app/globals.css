@@ -1,26 +1,231 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Dark theme - always dark (TokenTerminal/Bloomberg inspired) */
+  --background: #0d0d0f;
+  --background-secondary: #141418;
+  --background-tertiary: #1a1a1f;
+  --foreground: #e5e5e5;
+  --foreground-muted: #a0a0a0;
+
+  /* Brand colors */
+  --accent-defi: #00ff88;
+  --accent-defi-muted: #00cc6a;
+  --accent-tradfi: #00b4d8;
+  --accent-tradfi-muted: #0096b4;
+
+  /* Chart colors */
+  --chart-positive: #22c55e;
+  --chart-negative: #ef4444;
+  --chart-neutral: #6b7280;
+
+  /* Border and card */
+  --border: #2a2a30;
+  --card-bg: rgba(20, 20, 24, 0.8);
+  --card-border: rgba(255, 255, 255, 0.08);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(20, 20, 24, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.1);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-background-secondary: var(--background-secondary);
+  --color-background-tertiary: var(--background-tertiary);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-foreground-muted: var(--foreground-muted);
+  --color-accent-defi: var(--accent-defi);
+  --color-accent-defi-muted: var(--accent-defi-muted);
+  --color-accent-tradfi: var(--accent-tradfi);
+  --color-accent-tradfi-muted: var(--accent-tradfi-muted);
+  --color-chart-positive: var(--chart-positive);
+  --color-chart-negative: var(--chart-negative);
+  --color-chart-neutral: var(--chart-neutral);
+  --color-border: var(--border);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Inter, system-ui, sans-serif;
+}
+
+/* Monospace font for financial data */
+.font-mono {
+  font-family: var(--font-mono), "JetBrains Mono", "Roboto Mono", monospace;
+}
+
+/* Tabular numbers - crucial for aligning financial data */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground-muted);
+}
+
+/* Glassmorphism card utility */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+}
+
+/* Badge styles */
+.badge-defi {
+  background: rgba(0, 255, 136, 0.15);
+  color: var(--accent-defi);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+}
+
+.badge-tradfi {
+  background: rgba(0, 180, 216, 0.15);
+  color: var(--accent-tradfi);
+  border: 1px solid rgba(0, 180, 216, 0.3);
+}
+
+/* Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(0, 255, 136, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px 4px rgba(0, 255, 136, 0.15);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.15s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Enhanced glass card with hover */
+.glass-card {
+  transition: all 0.2s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Gradient text utility */
+.gradient-text-defi {
+  background: linear-gradient(135deg, var(--accent-defi) 0%, var(--accent-defi-muted) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-tradfi {
+  background: linear-gradient(135deg, var(--accent-tradfi) 0%, var(--accent-tradfi-muted) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Data cell styling */
+.data-cell {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hover highlight for table rows */
+tr.hover-highlight:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Focus ring for accessibility */
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent-defi);
+  outline-offset: 2px;
+}
+
+/* Loading shimmer effect */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--background-secondary) 0%,
+    var(--background-tertiary) 50%,
+    var(--background-secondary) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Status indicator dots */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot.live {
+  background: var(--chart-positive);
+  box-shadow: 0 0 8px var(--chart-positive);
+}
+
+.status-dot.stale {
+  background: var(--chart-neutral);
+}
+
+/* Number formatting */
+.mono-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }

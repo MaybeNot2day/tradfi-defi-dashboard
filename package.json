@@ -6,21 +6,46 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "fetch:metrics": "npx tsx scripts/fetchMetrics.ts",
+    "fetch:metrics:dry": "npx tsx scripts/fetchMetrics.ts --dry-run",
+    "db:seed": "npx tsx scripts/seed.ts",
+    "db:seed:mock": "npx tsx scripts/seed.ts --mock",
+    "db:reset": "npx tsx scripts/seed.ts --reset --mock"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.0",
+    "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
     "next": "16.1.4",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "recharts": "^3.6.0",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.1.2",
     "eslint": "^9",
     "eslint-config-next": "16.1.4",
+    "jsdom": "^27.4.0",
+    "prettier": "^3.8.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "tsx": "^4.21.0",
+    "typescript": "^5",
+    "vitest": "^4.0.17"
   }
 }
