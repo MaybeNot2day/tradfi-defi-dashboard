@@ -21,6 +21,34 @@ import { PAIRS, getAllEntities, type Entity } from "../src/data/pairs";
 import { closeDb } from "../src/lib/db";
 import { initializeSchema } from "../src/lib/schema";
 import { upsertEntity, upsertPair, insertSnapshot, insertMetrics } from "../src/lib/repository";
+
+/**
+ * Retry wrapper for database operations.
+ * Handles transient connection errors with exponential backoff.
+ */
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      if (attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(2, attempt - 1);
+        console.log(`  [Retry ${attempt}/${maxRetries}] DB error, waiting ${delay}ms...`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }
+  
+  throw lastError;
+}
 import { fetchTradFiData } from "../src/lib/api/fmp";
 import { fetchDeFiTokenData } from "../src/lib/api/coingecko";
 import { fetchDeFiFeesData } from "../src/lib/api/defillama";
@@ -189,22 +217,24 @@ async function main() {
 
       console.log(`OK  (EV: ${ev}, P/E: ${pe}, P/S: ${ps})`);
 
-      // Store in database (if not dry run)
+      // Store in database (if not dry run) with retry logic
       if (!isDryRun) {
-        const snapshotId = await insertSnapshot(
-          entity.id,
-          capturedAt,
-          entity.type === "tradfi" ? "fmp" : "coingecko+defillama",
-          JSON.stringify(result.metrics)
-        );
+        await withRetry(async () => {
+          const snapshotId = await insertSnapshot(
+            entity.id,
+            capturedAt,
+            entity.type === "tradfi" ? "fmp" : "coingecko+defillama",
+            JSON.stringify(result.metrics)
+          );
 
-        await insertMetrics(snapshotId, [
-          { type: "equity_value", value: result.metrics.equityValue },
-          { type: "revenue", value: result.metrics.revenue },
-          { type: "fees", value: result.metrics.fees },
-          { type: "pe_ratio", value: result.metrics.peRatio },
-          { type: "ps_ratio", value: result.metrics.psRatio },
-        ]);
+          await insertMetrics(snapshotId, [
+            { type: "equity_value", value: result.metrics.equityValue },
+            { type: "revenue", value: result.metrics.revenue },
+            { type: "fees", value: result.metrics.fees },
+            { type: "pe_ratio", value: result.metrics.peRatio },
+            { type: "ps_ratio", value: result.metrics.psRatio },
+          ]);
+        });
       }
     } else {
       console.log(`FAIL (${result.error})`);
