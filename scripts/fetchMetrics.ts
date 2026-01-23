@@ -61,10 +61,12 @@ const dateOverride = args.find((a) => a.startsWith("--date="))?.split("=")[1];
  * Protocol-specific revenue adjustments.
  * Some protocols report revenue differently than actual protocol share.
  * Multiplier is applied to the DefiLlama revenue value.
+ * 
+ * Note: DefiLlama already calculates protocol revenue correctly for most protocols,
+ * so this should remain empty unless there's a specific known discrepancy.
  */
 const REVENUE_ADJUSTMENTS: Record<string, number> = {
-  // GMX: DefiLlama reports ~100% of fees as revenue, but protocol only captures ~30%
-  gmx: 0.30,
+  // Empty - DefiLlama handles revenue calculations correctly
 };
 
 interface FetchResult {
