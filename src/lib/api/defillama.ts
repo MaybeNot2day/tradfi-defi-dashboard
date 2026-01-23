@@ -106,11 +106,19 @@ function parseFeesAndRevenueResponse(
 ): DeFiFeesData {
   // Fees come from the dailyFees endpoint
   const fees24h = feesData.total24h;
-  const annualizedFees = fees24h ? fees24h * 365 : null;
+  const fees30d = feesData.total30d;
+  
+  // Use 30-day data for more stable annualization (30d * 12)
+  // Falls back to 24h * 365 if 30d data unavailable
+  const annualizedFees = fees30d ? fees30d * 12 : (fees24h ? fees24h * 365 : null);
 
   // Revenue comes from the dailyRevenue endpoint (total24h field when dataType=dailyRevenue)
   const revenue24h = revenueData?.total24h ?? null;
-  const annualizedRevenue = revenue24h ? revenue24h * 365 : null;
+  const revenue30d = revenueData?.total30d ?? null;
+  
+  // Use 30-day data for more stable annualization (30d * 12)
+  // Falls back to 24h * 365 if 30d data unavailable
+  const annualizedRevenue = revenue30d ? revenue30d * 12 : (revenue24h ? revenue24h * 365 : null);
 
   return {
     protocol: protocolSlug,
