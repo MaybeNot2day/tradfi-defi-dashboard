@@ -13,6 +13,14 @@ const PROTOCOL_NOTES: Record<string, { note: string; revenueDisplay: string }> =
   },
 };
 
+// Special case annotations for TradFi entities
+const TRADFI_NOTES: Record<string, { note: string; field: "marketCap" | "pe" | "revenue" }> = {
+  ibkr: {
+    note: "FMP market cap includes both Class A (public) and Class B (founder-held) shares, which is ~4x higher than the publicly traded Class A market cap.",
+    field: "marketCap",
+  },
+};
+
 interface PairTableProps {
   pairs: PairComparison[];
   onPairClick?: (pairId: number) => void;
@@ -106,7 +114,23 @@ export function PairTable({ pairs, onPairClick }: PairTableProps) {
               </td>
               {/* TradFi numbers - right aligned, monospace, tabular */}
               <td className="py-4 pr-4 text-right font-mono tabular-nums">
-                {formatCurrency(pair.tradfi.equityValue)}
+                {TRADFI_NOTES[pair.tradfi.entityId]?.field === "marketCap" ? (
+                  <span className="inline-flex items-center justify-end gap-1">
+                    {formatCurrency(pair.tradfi.equityValue)}
+                    <Tooltip
+                      content={
+                        <div className="w-64 whitespace-normal text-left">
+                          {TRADFI_NOTES[pair.tradfi.entityId].note}
+                        </div>
+                      }
+                      position="top"
+                    >
+                      <span className="text-accent-tradfi cursor-help">*</span>
+                    </Tooltip>
+                  </span>
+                ) : (
+                  formatCurrency(pair.tradfi.equityValue)
+                )}
               </td>
               <td className="py-4 pr-4 text-right font-mono tabular-nums text-foreground-muted">
                 {formatCurrency(pair.tradfi.revenue)}
@@ -202,7 +226,24 @@ export function CompactPairCard({ pair, onClick }: CompactPairCardProps) {
           </div>
           <p className="text-accent-tradfi font-medium text-left">{pair.tradfi.name}</p>
           <p className="text-xs text-foreground-muted mt-1">
-            Mkt Cap: <span className="font-mono tabular-nums">{formatCurrency(pair.tradfi.equityValue)}</span>
+            Mkt Cap:{" "}
+            {TRADFI_NOTES[pair.tradfi.entityId]?.field === "marketCap" ? (
+              <span className="inline-flex items-center gap-1">
+                <span className="font-mono tabular-nums">{formatCurrency(pair.tradfi.equityValue)}</span>
+                <Tooltip
+                  content={
+                    <div className="w-64 whitespace-normal text-left">
+                      {TRADFI_NOTES[pair.tradfi.entityId].note}
+                    </div>
+                  }
+                  position="top"
+                >
+                  <span className="text-accent-tradfi cursor-help">*</span>
+                </Tooltip>
+              </span>
+            ) : (
+              <span className="font-mono tabular-nums">{formatCurrency(pair.tradfi.equityValue)}</span>
+            )}
           </p>
           <p className="text-xs text-foreground-muted">
             Revenue: <span className="font-mono tabular-nums">{formatCurrency(pair.tradfi.revenue)}</span>
