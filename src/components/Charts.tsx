@@ -90,12 +90,14 @@ export function PESpreadChart({ pairs }: DivergingBarChartProps) {
           width={130}
         />
         <Tooltip
+          cursor={{ fill: "rgba(255, 255, 255, 0.03)" }}
+          wrapperStyle={{ outline: "none" }}
           content={({ payload }) => {
             if (!payload || payload.length === 0) return null;
             const data = payload[0].payload;
             const isPositive = (data.spread || 0) >= 0;
             return (
-              <div className="glass-card p-3 text-sm min-w-[200px]">
+              <div className="chart-tooltip">
                 <p className="font-medium mb-2">{data.name}</p>
                 <div className="space-y-1 text-foreground-muted">
                   <p>
@@ -109,7 +111,7 @@ export function PESpreadChart({ pairs }: DivergingBarChartProps) {
                     <span className="font-mono">{data.defiPE?.toFixed(1) ?? "N/A"}</span>
                   </p>
                 </div>
-                <div className="mt-2 pt-2 border-t border-border">
+                <div className="mt-2 pt-2 border-t border-white/10">
                   <p className={isPositive ? "text-chart-negative" : "text-chart-positive"}>
                     Spread: <span className="font-mono">{isPositive ? "+" : ""}{data.spread?.toFixed(1)}</span>
                   </p>
@@ -230,11 +232,13 @@ export function MarketLandscapeChart({ pairs }: MarketLandscapeProps) {
         />
         <ZAxis range={[80, 80]} />
         <Tooltip
+          cursor={{ strokeDasharray: "3 3", stroke: "rgba(255, 255, 255, 0.2)" }}
+          wrapperStyle={{ outline: "none" }}
           content={({ payload }) => {
             if (!payload || payload.length === 0) return null;
             const data = payload[0].payload;
             return (
-              <div className="glass-card p-3 text-sm min-w-[180px]">
+              <div className="chart-tooltip">
                 <p className={`font-medium ${data.type === "TradFi" ? "text-accent-tradfi" : "text-accent-defi"}`}>
                   {data.name}
                 </p>
@@ -316,10 +320,12 @@ export function TrendChart({
           width={50}
         />
         <Tooltip
+          cursor={{ stroke: "rgba(255, 255, 255, 0.1)" }}
+          wrapperStyle={{ outline: "none" }}
           content={({ payload, label }) => {
             if (!payload || payload.length === 0) return null;
             return (
-              <div className="glass-card p-3 text-sm">
+              <div className="chart-tooltip">
                 <p className="text-foreground-muted">{label}</p>
                 <p className="font-medium">
                   {metricLabel}: {payload[0].value?.toFixed(2)}
@@ -392,10 +398,12 @@ export function ComparisonTrendChart({
           width={50}
         />
         <Tooltip
+          cursor={{ stroke: "rgba(255, 255, 255, 0.1)" }}
+          wrapperStyle={{ outline: "none" }}
           content={({ payload, label }) => {
             if (!payload || payload.length === 0) return null;
             return (
-              <div className="glass-card p-3 text-sm">
+              <div className="chart-tooltip">
                 <p className="text-foreground-muted mb-2">{label}</p>
                 {payload.map((entry) => (
                   <p key={entry.dataKey} style={{ color: entry.color }}>
