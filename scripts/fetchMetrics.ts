@@ -211,9 +211,10 @@ async function main() {
     results.push(result);
 
     if (result.success && result.metrics) {
-      const pe = result.metrics.peRatio?.toFixed(1) ?? "N/A";
-      const ps = result.metrics.psRatio?.toFixed(1) ?? "N/A";
-      const ev = formatCurrency(result.metrics.equityValue);
+      const metrics = result.metrics; // Capture for use in async callback
+      const pe = metrics.peRatio?.toFixed(1) ?? "N/A";
+      const ps = metrics.psRatio?.toFixed(1) ?? "N/A";
+      const ev = formatCurrency(metrics.equityValue);
 
       console.log(`OK  (EV: ${ev}, P/E: ${pe}, P/S: ${ps})`);
 
@@ -224,15 +225,15 @@ async function main() {
             entity.id,
             capturedAt,
             entity.type === "tradfi" ? "fmp" : "coingecko+defillama",
-            JSON.stringify(result.metrics)
+            JSON.stringify(metrics)
           );
 
           await insertMetrics(snapshotId, [
-            { type: "equity_value", value: result.metrics.equityValue },
-            { type: "revenue", value: result.metrics.revenue },
-            { type: "fees", value: result.metrics.fees },
-            { type: "pe_ratio", value: result.metrics.peRatio },
-            { type: "ps_ratio", value: result.metrics.psRatio },
+            { type: "equity_value", value: metrics.equityValue },
+            { type: "revenue", value: metrics.revenue },
+            { type: "fees", value: metrics.fees },
+            { type: "pe_ratio", value: metrics.peRatio },
+            { type: "ps_ratio", value: metrics.psRatio },
           ]);
         });
       }
