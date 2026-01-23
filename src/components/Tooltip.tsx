@@ -121,32 +121,32 @@ export const METRIC_TOOLTIPS = {
   pe_ratio: {
     title: "P/E Ratio (Price-to-Earnings)",
     description:
-      "Measures value relative to earnings retained. For DeFi, uses protocol revenue (fees kept by protocol, not LPs). Null if protocol has no revenue.",
+      "Measures value relative to earnings. For DeFi, uses protocol revenue (fees retained by protocol, not paid to LPs). Null if protocol has no revenue.",
     formula:
-      "TradFi: Market Cap / TTM Net Income | DeFi: FDV / Annualized Protocol Revenue",
+      "TradFi: FMP TTM P/E Ratio | DeFi: FDV ÷ Annualized Protocol Revenue",
   },
   ps_ratio: {
     title: "P/S Ratio (Price-to-Sales)",
     description:
-      "Measures value relative to total demand for the service. Uses all fees paid by users.",
-    formula: "TradFi: Market Cap / TTM Revenue | DeFi: FDV / Annualized Total Fees",
+      "Measures value relative to total fees paid by users (demand for the service).",
+    formula: "TradFi: FMP TTM P/S Ratio | DeFi: FDV ÷ Annualized Total Fees",
   },
   equity_value: {
     title: "Equity Value",
     description: "Total valuation of the entity.",
-    formula: "TradFi: Market Capitalization | DeFi: Fully Diluted Valuation (FDV)",
+    formula: "TradFi: Market Cap (FMP) | DeFi: Fully Diluted Valuation (CoinGecko)",
   },
   revenue: {
     title: "Revenue",
     description:
-      "Income generated. For DeFi, this is protocol revenue (fees retained by the protocol after LP distributions).",
-    formula: "TradFi: TTM Revenue | DeFi: Daily Protocol Revenue × 365",
+      "Income generated. For DeFi, this is protocol revenue only (after LP/validator distributions).",
+    formula: "TradFi: TTM Revenue (FMP) | DeFi: 30d Revenue × 12 (DefiLlama)",
   },
   spread: {
     title: "P/E Spread",
     description:
-      "Difference between DeFi and TradFi P/E ratios. Positive means DeFi trades at a premium.",
-    formula: "DeFi P/E - TradFi P/E",
+      "Valuation gap between comparable TradFi and DeFi entities. Positive = DeFi premium, Negative = DeFi discount.",
+    formula: "DeFi P/E − TradFi P/E",
   },
 };
 
