@@ -184,8 +184,15 @@ export function MarketLandscapeChart({ pairs }: MarketLandscapeProps) {
   // Calculate domains
   const allPE = [...tradfiData, ...defiData].map((d) => d.peRatio || 0);
   const rawMaxPE = Math.max(...allPE);
-  // Round max P/E up to nearest 25 for clean axis
-  const maxPE = Math.ceil(rawMaxPE / 25) * 25;
+  // Round max P/E up to nearest 50 for clean axis, with 10% padding
+  const maxPE = Math.ceil((rawMaxPE * 1.1) / 50) * 50;
+
+  // Generate Y-axis ticks dynamically based on max value
+  const peTickInterval = maxPE <= 100 ? 25 : 50;
+  const peTicks = Array.from(
+    { length: Math.floor(maxPE / peTickInterval) + 1 },
+    (_, i) => i * peTickInterval
+  );
 
   // Fixed log-scale ticks for revenue axis
   const revenueTicks = [1e7, 1e8, 1e9, 1e10, 1e11]; // $10M, $100M, $1B, $10B, $100B
@@ -217,7 +224,7 @@ export function MarketLandscapeChart({ pairs }: MarketLandscapeProps) {
           dataKey="peRatio"
           name="P/E Ratio"
           domain={[0, maxPE]}
-          ticks={[0, 25, 50, 75, 100, 125, 150, 175].filter(t => t <= maxPE)}
+          ticks={peTicks}
           tick={{ fill: COLORS.text, fontSize: 11 }}
           axisLine={{ stroke: COLORS.grid }}
           tickFormatter={(value) => value.toFixed(0)}
