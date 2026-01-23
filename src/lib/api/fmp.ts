@@ -6,7 +6,8 @@
  * Uses the new "stable" API endpoints (as of 2025)
  */
 
-const FMP_BASE_URL = "https://financialmodelingprep.com/stable";
+// FMP stable API endpoint (as of 2025)
+const FMP_STABLE_URL = "https://financialmodelingprep.com/stable";
 
 interface FMPQuote {
   symbol: string;
@@ -32,6 +33,12 @@ interface FMPKeyMetrics {
   priceToSalesRatio: number;
 }
 
+interface FMPRatiosTTM {
+  // FMP stable API uses priceToEarningsRatioTTM not peRatioTTM
+  priceToEarningsRatioTTM: number;
+  priceToSalesRatioTTM: number;
+}
+
 export interface TradFiData {
   ticker: string;
   name: string;
@@ -49,7 +56,7 @@ export interface TradFiData {
  * New stable endpoint: /stable/quote?symbol=TICKER
  */
 async function fetchQuote(ticker: string, apiKey: string): Promise<FMPQuote | null> {
-  const url = `${FMP_BASE_URL}/quote?symbol=${ticker}&apikey=${apiKey}`;
+  const url = `${FMP_STABLE_URL}/quote?symbol=${ticker}&apikey=${apiKey}`;
 
   const response = await fetch(url);
   if (!response.ok) {
@@ -86,7 +93,7 @@ async function fetchIncomeStatement(
   ticker: string,
   apiKey: string
 ): Promise<FMPIncomeStatement[] | null> {
-  const url = `${FMP_BASE_URL}/income-statement?symbol=${ticker}&period=annual&limit=4&apikey=${apiKey}`;
+  const url = `${FMP_STABLE_URL}/income-statement?symbol=${ticker}&period=annual&limit=4&apikey=${apiKey}`;
 
   const response = await fetch(url);
   if (!response.ok) {
@@ -112,7 +119,7 @@ async function fetchKeyMetricsTTM(
   ticker: string,
   apiKey: string
 ): Promise<FMPKeyMetrics | null> {
-  const url = `${FMP_BASE_URL}/key-metrics-ttm?symbol=${ticker}&apikey=${apiKey}`;
+  const url = `${FMP_STABLE_URL}/key-metrics-ttm?symbol=${ticker}&apikey=${apiKey}`;
 
   const response = await fetch(url);
   if (!response.ok) {
@@ -134,10 +141,39 @@ async function fetchKeyMetricsTTM(
 }
 
 /**
+ * Fetch ratios TTM (primary source for P/E and P/S ratios).
+ * Uses stable API endpoint which returns priceToEarningsRatioTTM.
+ */
+async function fetchRatiosTTM(
+  ticker: string,
+  apiKey: string
+): Promise<FMPRatiosTTM | null> {
+  const url = `${FMP_STABLE_URL}/ratios-ttm?symbol=${ticker}&apikey=${apiKey}`;
+  
+  const response = await fetch(url);
+  if (!response.ok) {
+    return null;
+  }
+
+  const data = await response.json();
+
+  if (Array.isArray(data) && data.length > 0) {
+    const ratios = data[0];
+    // Check for the correct field name
+    if (ratios.priceToEarningsRatioTTM !== undefined || ratios.priceToSalesRatioTTM !== undefined) {
+      return ratios as FMPRatiosTTM;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Fetch all TradFi data for a ticker.
  */
 export async function fetchTradFiData(ticker: string): Promise<TradFiData | null> {
   const apiKey = process.env.FMP_API_KEY;
+  const DEBUG = process.env.FMP_DEBUG === "true";
 
   if (!apiKey) {
     console.error("FMP_API_KEY not configured");
@@ -145,34 +181,58 @@ export async function fetchTradFiData(ticker: string): Promise<TradFiData | null
   }
 
   try {
-    // Fetch quote and income in parallel
-    const [quote, incomeStatements, keyMetrics] = await Promise.all([
+    // Fetch quote, income, key-metrics, and ratios in parallel
+    const [quote, incomeStatements, keyMetrics, ratiosTTM] = await Promise.all([
       fetchQuote(ticker, apiKey),
       fetchIncomeStatement(ticker, apiKey),
       fetchKeyMetricsTTM(ticker, apiKey),
+      fetchRatiosTTM(ticker, apiKey),
     ]);
+
+    if (DEBUG) {
+      console.log(`\n[FMP DEBUG] ${ticker}:`);
+      console.log(`  Quote: marketCap=${quote?.marketCap}, price=${quote?.price}`);
+      console.log(`  KeyMetrics: peRatio=${keyMetrics?.peRatio}, psRatio=${keyMetrics?.priceToSalesRatio}`);
+      console.log(`  RatiosTTM: peRatioTTM=${ratiosTTM?.priceToEarningsRatioTTM}, psRatioTTM=${ratiosTTM?.priceToSalesRatioTTM}`);
+      if (incomeStatements?.[0]) {
+        console.log(`  Income[0]: revenue=${incomeStatements[0].revenue}, netIncome=${incomeStatements[0].netIncome}, date=${incomeStatements[0].date}`);
+      }
+    }
 
     if (!quote) {
       return null;
     }
+
+    const marketCap = quote.marketCap;
 
     // Use most recent income statement for TTM revenue
     const latestIncome = incomeStatements?.[0];
     const ttmRevenue = latestIncome?.revenue ?? 0;
     const ttmNetIncome = latestIncome?.netIncome ?? 0;
 
-    // Calculate ratios
-    const peRatio = ttmNetIncome > 0 ? quote.marketCap / ttmNetIncome : null;
-    const psRatio = ttmRevenue > 0 ? quote.marketCap / ttmRevenue : null;
+    // Calculate fallback ratios (used if FMP endpoints don't return them)
+    const calculatedPeRatio = ttmNetIncome > 0 ? marketCap / ttmNetIncome : null;
+    const calculatedPsRatio = ttmRevenue > 0 ? marketCap / ttmRevenue : null;
+
+    // Priority for P/E: ratios-ttm (priceToEarningsRatioTTM) > key-metrics-ttm > calculated
+    // ratios-ttm endpoint has the most accurate TTM P/E ratio from FMP
+    const peRatio = ratiosTTM?.priceToEarningsRatioTTM ?? keyMetrics?.peRatio ?? calculatedPeRatio;
+    const psRatio = ratiosTTM?.priceToSalesRatioTTM ?? keyMetrics?.priceToSalesRatio ?? calculatedPsRatio;
+
+    const peSource = ratiosTTM?.priceToEarningsRatioTTM ? "ratios-ttm" : keyMetrics?.peRatio ? "key-metrics" : "calculated";
+
+    if (DEBUG) {
+      console.log(`  Final: marketCap=${marketCap}, P/E=${peRatio?.toFixed(2)} (source: ${peSource})`);
+    }
 
     return {
       ticker,
       name: quote.name,
-      marketCap: quote.marketCap,
+      marketCap,
       ttmRevenue,
       ttmNetIncome,
-      peRatio: keyMetrics?.peRatio ?? peRatio,
-      psRatio: keyMetrics?.priceToSalesRatio ?? psRatio,
+      peRatio,
+      psRatio,
       rawQuote: quote,
       rawIncome: incomeStatements,
     };
