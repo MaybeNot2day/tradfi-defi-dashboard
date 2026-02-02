@@ -114,7 +114,7 @@ npm run test:run      # Run tests once
 | 7 | Derivatives Marketplaces | CME Group | GMX |
 | 8 | Fixed Income Markets | Tradeweb | Curve |
 | 9 | Yield Traders | MarketAxess | Pendle |
-| 10 | The Exotics | Cboe Global | Synthetix |
+| 10 | Trade Execution | Cboe Global | Jupiter |
 
 ## Tech Stack
 

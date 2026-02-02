@@ -95,7 +95,7 @@ async function seedMockMetrics() {
     gmx: { equityValue: 450_000_000, revenue: 85_000_000, fees: 120_000_000 },
     curve: { equityValue: 350_000_000, revenue: 25_000_000, fees: 45_000_000 },
     pendle: { equityValue: 650_000_000, revenue: 55_000_000, fees: 70_000_000 },
-    synthetix: { equityValue: 400_000_000, revenue: 30_000_000, fees: 50_000_000 },
+    jupiter: { equityValue: 1_200_000_000, revenue: 90_000_000, fees: 140_000_000 },
   };
 
   for (const [entityId, data] of Object.entries(mockData)) {
