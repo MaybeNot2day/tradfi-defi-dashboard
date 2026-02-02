@@ -309,6 +309,7 @@ export async function getHistoricalMetrics(
       JOIN metrics m ON m.snapshot_id = s.id
       WHERE s.entity_id = ?
       AND m.metric_type = ?
+      AND m.value IS NOT NULL
       ORDER BY s.captured_at DESC
       LIMIT ?
     `,

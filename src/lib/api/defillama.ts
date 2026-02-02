@@ -110,7 +110,8 @@ function parseFeesAndRevenueResponse(
   
   // Use 30-day data for more stable annualization (30d * 12)
   // Falls back to 24h * 365 if 30d data unavailable
-  const annualizedFees = fees30d ? fees30d * 12 : (fees24h ? fees24h * 365 : null);
+  const annualizedFees =
+    fees30d != null ? fees30d * 12 : fees24h != null ? fees24h * 365 : null;
 
   // Revenue comes from the dailyRevenue endpoint (total24h field when dataType=dailyRevenue)
   const revenue24h = revenueData?.total24h ?? null;
@@ -118,7 +119,8 @@ function parseFeesAndRevenueResponse(
   
   // Use 30-day data for more stable annualization (30d * 12)
   // Falls back to 24h * 365 if 30d data unavailable
-  const annualizedRevenue = revenue30d ? revenue30d * 12 : (revenue24h ? revenue24h * 365 : null);
+  const annualizedRevenue =
+    revenue30d != null ? revenue30d * 12 : revenue24h != null ? revenue24h * 365 : null;
 
   return {
     protocol: protocolSlug,

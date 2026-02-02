@@ -40,5 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-#API keys
-.env.locallocal.db
+# API keys
+.env.local
+
+# local dev database
+local.db
