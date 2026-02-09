@@ -336,3 +336,44 @@ export async function getLastUpdateTime(): Promise<string | null> {
 
   return result.rows[0].last_update as string;
 }
+
+/**
+ * Get historical P/E and equity data for a pair, including calculated spread.
+ */
+export async function getPairHistoricalData(
+  tradfiId: string,
+  defiId: string,
+  limit: number = 52
+): Promise<{
+  peHistory: { tradfi: HistoricalDataPoint[]; defi: HistoricalDataPoint[] };
+  equityHistory: { tradfi: HistoricalDataPoint[]; defi: HistoricalDataPoint[] };
+  spreadHistory: HistoricalDataPoint[];
+}> {
+  // Fetch all historical data in parallel
+  const [tradfiPE, defiPE, tradfiEquity, defiEquity] = await Promise.all([
+    getHistoricalMetrics(tradfiId, "pe_ratio", limit),
+    getHistoricalMetrics(defiId, "pe_ratio", limit),
+    getHistoricalMetrics(tradfiId, "equity_value", limit),
+    getHistoricalMetrics(defiId, "equity_value", limit),
+  ]);
+
+  // Calculate spread history by matching dates
+  const spreadHistory: HistoricalDataPoint[] = [];
+  const tradfiPEByDate = new Map(tradfiPE.map((d) => [d.date, d.value]));
+
+  for (const defiPoint of defiPE) {
+    const tradfiValue = tradfiPEByDate.get(defiPoint.date);
+    if (tradfiValue !== undefined) {
+      spreadHistory.push({
+        date: defiPoint.date,
+        value: defiPoint.value - tradfiValue,
+      });
+    }
+  }
+
+  return {
+    peHistory: { tradfi: tradfiPE, defi: defiPE },
+    equityHistory: { tradfi: tradfiEquity, defi: defiEquity },
+    spreadHistory,
+  };
+}

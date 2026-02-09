@@ -9,15 +9,17 @@ import {
   PESpreadChart,
   MarketLandscapeChart,
   Tabs,
+  PairHistoricalCharts,
 } from "@/components";
 import { formatCurrency } from "@/lib/format";
-import type { PairComparison } from "@/types/metrics";
+import type { PairComparison, PairHistoricalData } from "@/types/metrics";
 import type { Pair } from "@/data/pairs";
 
 interface DashboardProps {
   pairs: PairComparison[];
   pairDefinitions: Pair[];
   lastUpdated?: string;
+  historicalData?: PairHistoricalData[];
 }
 
 const CATEGORY_TABS = [
@@ -47,9 +49,10 @@ const CATEGORY_MAPPING: Record<string, string[]> = {
   ],
 };
 
-export function Dashboard({ pairs, pairDefinitions, lastUpdated }: DashboardProps) {
+export function Dashboard({ pairs, pairDefinitions, lastUpdated, historicalData = [] }: DashboardProps) {
   const [activeTab, setActiveTab] = useState("all");
   const [, setSelectedPairId] = useState<number | null>(null);
+  const [expandedPair, setExpandedPair] = useState<number | null>(null);
 
   // Filter pairs by category
   const filteredPairs =
@@ -161,6 +164,76 @@ export function Dashboard({ pairs, pairDefinitions, lastUpdated }: DashboardProp
             </p>
             <MarketLandscapeChart pairs={filteredPairs} />
           </section>
+
+          {/* Historical Trends Section */}
+          {historicalData.length > 0 && (
+            <section className="glass-card p-6 mb-8">
+              <h2 className="text-xl font-semibold mb-2">Historical Trends</h2>
+              <p className="text-foreground-muted text-sm mb-6">
+                Track how valuations and spreads have changed over time. Click a pair to expand.
+              </p>
+              <div className="space-y-4">
+                {historicalData
+                  .filter((h) => {
+                    if (activeTab === "all") return true;
+                    const pair = pairs.find((p) => p.pairId === h.pairId);
+                    if (!pair) return false;
+                    const categories = CATEGORY_MAPPING[activeTab] || [];
+                    return categories.includes(pair.tradfi.category) || categories.includes(pair.defi.category);
+                  })
+                  .map((pairHistory) => {
+                    const isExpanded = expandedPair === pairHistory.pairId;
+                    const hasData = pairHistory.spreadHistory.length > 0 ||
+                      pairHistory.peHistory.tradfi.length > 0 ||
+                      pairHistory.equityHistory.tradfi.length > 0;
+
+                    return (
+                      <div
+                        key={pairHistory.pairId}
+                        className="border border-border rounded-lg overflow-hidden"
+                      >
+                        <button
+                          onClick={() => setExpandedPair(isExpanded ? null : pairHistory.pairId)}
+                          className="w-full px-4 py-3 flex items-center justify-between hover:bg-background-secondary/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-4">
+                            <span className="text-foreground-muted text-sm">#{pairHistory.pairId}</span>
+                            <span className="font-medium">{pairHistory.theme}</span>
+                            <span className="text-sm text-foreground-muted">
+                              <span className="text-accent-tradfi">{pairHistory.tradfiName}</span>
+                              {" vs "}
+                              <span className="text-accent-defi">{pairHistory.defiName}</span>
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            {hasData && (
+                              <span className="text-xs text-foreground-muted">
+                                {pairHistory.spreadHistory.length} data points
+                              </span>
+                            )}
+                            <svg
+                              className={`w-5 h-5 text-foreground-muted transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </button>
+                        {isExpanded && (
+                          <div className="px-4 pb-4 border-t border-border bg-background-secondary/30">
+                            <div className="pt-4">
+                              <PairHistoricalCharts pairData={pairHistory} />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </section>
+          )}
         </>
       )}
 

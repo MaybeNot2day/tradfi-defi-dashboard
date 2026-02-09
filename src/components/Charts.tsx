@@ -19,7 +19,7 @@ import {
   Scatter,
   ZAxis,
 } from "recharts";
-import type { PairComparison, HistoricalDataPoint } from "@/types/metrics";
+import type { PairComparison, HistoricalDataPoint, PairHistoricalData } from "@/types/metrics";
 
 // Chart colors from CSS variables
 const COLORS = {
@@ -477,6 +477,250 @@ export function EquityComparisonBar({ tradfiValue, defiValue, maxValue }: Equity
           />
         </div>
       </div>
+    </div>
+  );
+}
+
+// Format large numbers for equity values
+function formatEquityValue(value: number): string {
+  if (value >= 1e12) return `$${(value / 1e12).toFixed(1)}T`;
+  if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
+  if (value >= 1e6) return `$${(value / 1e6).toFixed(0)}M`;
+  return `$${value.toFixed(0)}`;
+}
+
+interface SpreadHistoryChartProps {
+  data: HistoricalDataPoint[];
+  pairTheme: string;
+}
+
+export function SpreadHistoryChart({ data, pairTheme }: SpreadHistoryChartProps) {
+  if (data.length === 0) {
+    return (
+      <div className="h-[200px] flex items-center justify-center text-foreground-muted text-sm">
+        No spread history available
+      </div>
+    );
+  }
+
+  // Calculate domain with padding
+  const values = data.map((d) => d.value);
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+  const padding = Math.abs(maxVal - minVal) * 0.1 || 10;
+
+  return (
+    <ResponsiveContainer width="100%" height={200}>
+      <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+        <defs>
+          <linearGradient id={`spread-gradient-${pairTheme}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
+        <XAxis
+          dataKey="date"
+          tick={{ fill: COLORS.text, fontSize: 10 }}
+          axisLine={{ stroke: COLORS.grid }}
+          tickLine={false}
+          tickFormatter={(value) => {
+            const date = new Date(value);
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+          }}
+        />
+        <YAxis
+          tick={{ fill: COLORS.text, fontSize: 10 }}
+          axisLine={{ stroke: COLORS.grid }}
+          tickLine={false}
+          width={45}
+          domain={[minVal - padding, maxVal + padding]}
+          tickFormatter={(value) => value.toFixed(0)}
+        />
+        <ReferenceLine y={0} stroke={COLORS.text} strokeDasharray="3 3" />
+        <Tooltip
+          cursor={{ stroke: "rgba(255, 255, 255, 0.1)" }}
+          wrapperStyle={{ outline: "none" }}
+          content={({ payload, label }) => {
+            if (!payload || payload.length === 0) return null;
+            const value = payload[0].value as number;
+            const isPositive = value >= 0;
+            return (
+              <div className="chart-tooltip">
+                <p className="text-foreground-muted text-xs">{label}</p>
+                <p className={`font-mono ${isPositive ? "text-chart-negative" : "text-chart-positive"}`}>
+                  {isPositive ? "+" : ""}{value.toFixed(1)}
+                </p>
+                <p className="text-xs text-foreground-muted">
+                  {isPositive ? "DeFi premium" : "DeFi discount"}
+                </p>
+              </div>
+            );
+          }}
+        />
+        <Area
+          type="monotone"
+          dataKey="value"
+          stroke="#8b5cf6"
+          strokeWidth={2}
+          fill={`url(#spread-gradient-${pairTheme})`}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+}
+
+interface EquityTrendChartProps {
+  tradfiData: HistoricalDataPoint[];
+  defiData: HistoricalDataPoint[];
+  tradfiName: string;
+  defiName: string;
+}
+
+export function EquityTrendChart({
+  tradfiData,
+  defiData,
+  tradfiName,
+  defiName,
+}: EquityTrendChartProps) {
+  // Merge data by date
+  const allDates = new Set([
+    ...tradfiData.map((d) => d.date),
+    ...defiData.map((d) => d.date),
+  ]);
+
+  const mergedData = Array.from(allDates)
+    .sort()
+    .map((date) => ({
+      date,
+      tradfi: tradfiData.find((d) => d.date === date)?.value,
+      defi: defiData.find((d) => d.date === date)?.value,
+    }));
+
+  if (mergedData.length === 0) {
+    return (
+      <div className="h-[200px] flex items-center justify-center text-foreground-muted text-sm">
+        No equity history available
+      </div>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={200}>
+      <LineChart data={mergedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={COLORS.grid} vertical={false} />
+        <XAxis
+          dataKey="date"
+          tick={{ fill: COLORS.text, fontSize: 10 }}
+          axisLine={{ stroke: COLORS.grid }}
+          tickLine={false}
+          tickFormatter={(value) => {
+            const date = new Date(value);
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+          }}
+        />
+        <YAxis
+          tick={{ fill: COLORS.text, fontSize: 10 }}
+          axisLine={{ stroke: COLORS.grid }}
+          tickLine={false}
+          width={55}
+          tickFormatter={formatEquityValue}
+        />
+        <Tooltip
+          cursor={{ stroke: "rgba(255, 255, 255, 0.1)" }}
+          wrapperStyle={{ outline: "none" }}
+          content={({ payload, label }) => {
+            if (!payload || payload.length === 0) return null;
+            return (
+              <div className="chart-tooltip">
+                <p className="text-foreground-muted text-xs mb-2">{label}</p>
+                {payload.map((entry) => (
+                  <p key={entry.dataKey} style={{ color: entry.color }} className="text-sm">
+                    {entry.dataKey === "tradfi" ? tradfiName : defiName}:{" "}
+                    <span className="font-mono">{entry.value ? formatEquityValue(entry.value as number) : "N/A"}</span>
+                  </p>
+                ))}
+              </div>
+            );
+          }}
+        />
+        <Legend
+          formatter={(value) => (value === "tradfi" ? tradfiName : defiName)}
+          wrapperStyle={{ fontSize: 11 }}
+        />
+        <Line
+          type="monotone"
+          dataKey="tradfi"
+          stroke={COLORS.tradfi}
+          strokeWidth={2}
+          dot={false}
+          name="tradfi"
+        />
+        <Line
+          type="monotone"
+          dataKey="defi"
+          stroke={COLORS.defi}
+          strokeWidth={2}
+          dot={false}
+          name="defi"
+        />
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}
+
+interface PairHistoricalChartsProps {
+  pairData: PairHistoricalData;
+}
+
+export function PairHistoricalCharts({ pairData }: PairHistoricalChartsProps) {
+  const hasPEData = pairData.peHistory.tradfi.length > 0 || pairData.peHistory.defi.length > 0;
+  const hasEquityData = pairData.equityHistory.tradfi.length > 0 || pairData.equityHistory.defi.length > 0;
+  const hasSpreadData = pairData.spreadHistory.length > 0;
+
+  if (!hasPEData && !hasEquityData && !hasSpreadData) {
+    return (
+      <div className="text-foreground-muted text-sm text-center py-4">
+        No historical data available yet
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* P/E Ratio Comparison */}
+      {hasPEData && (
+        <div>
+          <h4 className="text-sm font-medium text-foreground-muted mb-2">P/E Ratio Trend</h4>
+          <ComparisonTrendChart
+            tradfiData={pairData.peHistory.tradfi}
+            defiData={pairData.peHistory.defi}
+            tradfiName={pairData.tradfiName}
+            defiName={pairData.defiName}
+          />
+        </div>
+      )}
+
+      {/* P/E Spread History */}
+      {hasSpreadData && (
+        <div>
+          <h4 className="text-sm font-medium text-foreground-muted mb-2">P/E Spread (DeFi - TradFi)</h4>
+          <SpreadHistoryChart data={pairData.spreadHistory} pairTheme={pairData.theme} />
+        </div>
+      )}
+
+      {/* Equity/FDV Comparison */}
+      {hasEquityData && (
+        <div>
+          <h4 className="text-sm font-medium text-foreground-muted mb-2">Market Cap / FDV Trend</h4>
+          <EquityTrendChart
+            tradfiData={pairData.equityHistory.tradfi}
+            defiData={pairData.equityHistory.defi}
+            tradfiName={pairData.tradfiName}
+            defiName={pairData.defiName}
+          />
+        </div>
+      )}
     </div>
   );
 }

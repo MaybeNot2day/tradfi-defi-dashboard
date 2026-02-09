@@ -69,3 +69,21 @@ export interface HistoryResponse {
   series: HistoricalSeries;
   lastUpdated: string;
 }
+
+export interface PairHistoricalData {
+  pairId: number;
+  theme: string;
+  tradfiId: string;
+  tradfiName: string;
+  defiId: string;
+  defiName: string;
+  peHistory: {
+    tradfi: HistoricalDataPoint[];
+    defi: HistoricalDataPoint[];
+  };
+  equityHistory: {
+    tradfi: HistoricalDataPoint[];
+    defi: HistoricalDataPoint[];
+  };
+  spreadHistory: HistoricalDataPoint[]; // Calculated DeFi P/E - TradFi P/E over time
+}
